@@ -1,5 +1,7 @@
 # Flood Prediction Project
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 ## Project Overview
 
 This project implements multiple machine learning and decision-making approaches to predict flood events based on environmental factors. It includes traditional ML models (SVM, Random Forest, etc.) and alternative approaches (Fuzzy Logic, MCDA, AHP) for comparison.
@@ -14,7 +16,7 @@ This project implements multiple machine learning and decision-making approaches
 
 1. Clone the repository:
 
-   git clone https://github.com/yourusername/flood-prediction-project.git
+   git clone https://github.com/Lagare24/flood-prediction-project.git
    cd flood-prediction-project
 
 2. Create and activate a virtual environment (recommended):
