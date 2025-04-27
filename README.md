@@ -66,18 +66,18 @@ This will:
 
 Two testing scripts are provided:
 
-#### Interactive Testing (`test_models.py`)
+#### Hard-coded input Testing (`test_models.py`)
 Run:
    python test_models.py
-- Provides an interactive interface for testing models
+- Provides static input for twsting models
 - Options to use example values or enter custom values
 - Shows predictions from all models for comparison
 
-#### Batch Testing (`test_predictions.py`)
+#### Interactive Testing (`test_predictions.py`)
 Run:
    python test_predictions.py
-- Tests models against multiple scenarios
-- Allows testing with specific or random records from dataset
+- Provides an interactive interface for testing models
+- Allows testing with user interaction, input value via prompt
 - Generates detailed prediction reports
 
 ## Output Files
