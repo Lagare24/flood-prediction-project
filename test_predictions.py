@@ -68,55 +68,51 @@ def test_with_custom_input(input_values):
     ]])
     
     print("\nInput Values:")
-    print("-" * 30)
+    print("-" * 50)
     for feature, value in input_values.items():
         print(f"{feature}: {value}")
     
     print("\nModel Predictions:")
-    print("-" * 30)
+    print("-" * 50)
+    print(f"{'Model':<20} {'Prediction':<15} {'Risk Levels/Probabilities':<50}")
+    print("-" * 85)
+    
     for model_name, model in models.items():
         try:
             if model_name in ['AHP', 'Fuzzy Technique', 'MCDA']:
-                # For these models, we need to use their specific prediction methods
                 if model_name == 'AHP':
                     weights = model['weights']
                     score = np.dot(features, weights)[0]
-                    prediction = 'Flood' if score > 0.5 else 'No Flood'
-                    print(f"{model_name}: {prediction} (Score: {score:.2%})")
+                    risk_level = 'High Risk' if score > 0.66 else 'Medium Risk' if score > 0.33 else 'Low Risk'
+                    print(f"{model_name:<20} {risk_level:<15} Score: {score:.2%}")
+                
                 elif model_name == 'Fuzzy Technique':
-                    # Implement fuzzy logic prediction
                     rainfall = features[0][0]
                     water_level = features[0][1]
-                    if rainfall > 50 and water_level > 2500:
-                        prediction = 'Flood'
-                    elif rainfall > 30 and water_level > 1500:
-                        prediction = 'Flood'
-                    else:
-                        prediction = 'No Flood'
-                    print(f"{model_name}: {prediction}")
+                    score = (rainfall/100 + water_level/5000) / 2
+                    risk_level = 'High Risk' if score > 0.66 else 'Medium Risk' if score > 0.33 else 'Low Risk'
+                    print(f"{model_name:<20} {risk_level:<15} Score: {score:.2%}")
+                
                 elif model_name == 'MCDA':
-                    # Normalize the input features
                     scaler = MinMaxScaler()
                     features_norm = scaler.fit_transform(features)
-                    
-                    # Get weights and calculate normalized score
                     weights = model['criteria_weights']
                     score = np.dot(features_norm, weights)[0]
-                    
-                    # Convert score to percentage (0-100%)
-                    score_percent = score * 100
-                    prediction = 'Flood' if score > 0.5 else 'No Flood'
-                    print(f"{model_name}: {prediction} (Score: {score_percent:.2f}%)")
+                    risk_level = 'High Risk' if score > 0.66 else 'Medium Risk' if score > 0.33 else 'Low Risk'
+                    print(f"{model_name:<20} {risk_level:<15} Score: {score:.2%}")
             else:
                 # For ML models
                 prediction = model.predict(features)[0]
                 try:
-                    probability = model.predict_proba(features)[0][1]
-                    print(f"{model_name}: {'Flood' if prediction == 1 else 'No Flood'} (Probability: {probability:.2%})")
+                    probabilities = model.predict_proba(features)[0]
+                    risk_level = 'High Risk' if prediction == 2 else 'Medium Risk' if prediction == 1 else 'Low Risk'
+                    probs_str = f"Low: {probabilities[0]:.1%}, Med: {probabilities[1]:.1%}, High: {probabilities[2]:.1%}"
+                    print(f"{model_name:<20} {risk_level:<15} {probs_str}")
                 except:
-                    print(f"{model_name}: {'Flood' if prediction == 1 else 'No Flood'}")
+                    risk_level = 'High Risk' if prediction == 2 else 'Medium Risk' if prediction == 1 else 'Low Risk'
+                    print(f"{model_name:<20} {risk_level:<15} Probabilities not available")
         except Exception as e:
-            print(f"{model_name}: Error predicting - {str(e)}")
+            print(f"{model_name:<20} Error: {str(e)}")
 
 def test_from_dataset(record_index=None):
     """Test using a record from the dataset"""

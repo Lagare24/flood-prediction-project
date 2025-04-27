@@ -141,17 +141,18 @@ Notes:
 
 ## Model Performance Summary
 
-| Model             | Accuracy | Precision | Recall | F1 Score | AUC     |
-| ----------------- | -------- | --------- | ------ | -------- | ------- |
-| Random Forest     | 99.94%   | 100%      | 99.77% | 99.88%   | 100%    |
-| Gradient Boosting | 99.94%   | 100%      | 99.77% | 99.88%   | 99.89%  |
-| SVM               | 99.77%   | 100%      | 99.08% | 99.54%   | 99.99%  |
-| ANN               | 99.66%   | 99.54%    | 99.08% | 99.31%   | 99.99%  |
-| XGBoost           | 99.60%   | 99.54%    | 98.85% | 99.19%   | 99.99%  |
-| KNN               | 90.78%   | 87.60%    | 73.10% | 79.70%   | 92.85%  |
-| Fuzzy Technique   | 75.24%   | 0%        | 0%     | 0%       | 99.09%  |
-| MCDA              | 68.87%   | 23.33%    | 11.26% | 15.19%   | 50.86%  |
-| AHP               | 56.40%   | 32.74%    | 72.18% | 45.05%   | 65.64%  |
+| Model               | Accuracy | Precision | Recall  | F1 Score | AUC     |
+|---------------------|----------|-----------|---------|----------|---------|
+| XGBoost             | 99.98%   | 99.99%   | 99.93%  | 99.96%   | 100%    |
+| Random Forest       | 99.84%   | 99.79%   | 99.44%  | 99.61%   | 100%    |
+| Gradient Boosting   | 99.95%   | 99.97%   | 99.80%  | 99.88%   | 100%    |
+| ANN                 | 99.01%   | 98.65%   | 98.17%  | 98.41%   | 99.93%  |
+| KNN                 | 93.01%   | 92.00%   | 91.89%  | 91.94%   | 98.27%  |
+| SVM                 | 87.80%   | 87.41%   | 81.76%  | 84.18%   | 97.03%  |
+| Logistic Regression | 66.78%   | 78.65%   | 46.69%  | 46.60%   | 81.67%  |
+| Fuzzy Technique     | 56.13%   | 18.71%   | 33.33%  | 23.97%   | N/A     |
+| MCDA                | 30.47%   | 30.47%   | 27.38%  | 26.43%   | N/A     |
+| AHP                 | 42.32%   | 42.32%   | 44.35%  | 38.94%   | N/A     |
 
 ## How to Use
 
@@ -179,8 +180,8 @@ test_input = {
 
 3. For each model, you'll see:
    - Input values used
-   - Prediction (Flood/No Flood)
-   - Probability of flood
+   - Prediction (Low/Medium/High Risk)
+   - Risk probabilities or scores
 
 ### Using Models in Your Code
 
@@ -199,62 +200,62 @@ model = joblib.load('output/models/model_name.joblib')
 ### Performance Analysis
 
 1. **Tree-based Models (Random Forest, Gradient Boosting, XGBoost)**
-   - Consistently highest performance with 99.94% accuracy for RF/GB and 99.60% for XGBoost
-   - Perfect precision (100%) indicates no false positives - crucial for flood warnings
-   - High recall (>98.85%) shows excellent ability to detect actual flood events
+   - XGBoost leads with 99.98% accuracy, followed by Gradient Boosting (99.95%) and Random Forest (99.84%)
+   - Near-perfect precision (>99.79%) indicates extremely reliable risk level predictions
+   - Excellent recall (>99.44%) shows outstanding ability to detect all risk levels
    - Feature importance analysis shows:
      - Water level is the most critical predictor
      - Rainfall rate and elevation are secondary but significant factors
      - Distance from river and slope have moderate influence
 
-2. **Support Vector Machine (SVM)**
-   - Excellent performance (99.77% accuracy) with linear kernel
-   - Perfect precision but slightly lower recall than tree-based models
-   - Very high AUC (99.99%) indicates excellent discrimination ability
-   - Works well due to clear separation between flood/non-flood cases
+2. **Support Vector Machine (SVM) and Logistic Regression**
+   - SVM achieves 87.80% accuracy with good balance between precision and recall
+   - Logistic Regression shows moderate performance (66.78% accuracy)
+   - Both models perform better than traditional methods but lag behind modern ML approaches
+   - Good for interpretability and understanding feature relationships
 
 3. **Artificial Neural Network (ANN)**
-   - Strong performance (99.66% accuracy) with single hidden layer
-   - Balanced precision and recall (both 99.54%)
+   - Excellent performance (99.01% accuracy) with optimized architecture
+   - Very balanced precision (98.65%) and recall (98.17%)
    - Performs well with both linear and non-linear relationships
    - Optimal with tanh activation and adam optimizer
 
 4. **K-Nearest Neighbors (KNN)**
-   - Moderate performance (90.78% accuracy)
-   - Lower recall (73.10%) indicates missed flood events
-   - Works best with k=3 and distance-weighted voting
-   - Performance suggests some overlap in feature space
+   - Good performance (93.01% accuracy)
+   - Well-balanced precision (92.00%) and recall (91.89%)
+   - Works best with optimized k value and distance-weighted voting
+   - Effective for capturing local patterns in the feature space
 
 ### Alternative Approaches
 
 5. **Fuzzy Logic System**
-   - Lower traditional metrics but high AUC (99.09%)
-   - Uses linguistic rules for interpretability
-   - Good for handling uncertainty in measurements
-   - Three-level classification (low/medium/high) for each input
+   - Moderate performance (56.13% accuracy)
+   - Better at capturing uncertainty in measurements
+   - Uses intuitive linguistic rules for interpretability
+   - Three-level classification (low/medium/high) matches human reasoning
 
 6. **Multi-Criteria Decision Analysis (MCDA)**
-   - Moderate performance (68.87% accuracy)
-   - Uses entropy-weighted criteria
-   - Transparent decision process
-   - Suitable for stakeholder involvement
+   - Lower performance (30.47% accuracy)
+   - Uses entropy-weighted criteria for objective weighting
+   - Transparent and explainable decision process
+   - Suitable for stakeholder involvement and policy making
 
 7. **Analytic Hierarchy Process (AHP)**
-   - Basic performance (56.40% accuracy)
-   - Higher recall (72.18%) but lower precision
+   - Basic performance (42.32% accuracy)
+   - Balanced precision and recall around 43%
    - Structured approach to criteria weighting
-   - Good for incorporating expert knowledge
+   - Good for incorporating expert knowledge and preferences
 
 ### ROC Curve Analysis
-- All traditional ML models show excellent ROC curves (AUC > 0.99)
-- Clear separation between flood and non-flood cases
-- Random Forest achieves perfect AUC (1.0)
-- Alternative approaches show more varied discrimination ability
+- Tree-based models achieve perfect AUC (1.0)
+- ANN and KNN show excellent discrimination (AUC > 0.98)
+- SVM and Logistic Regression maintain good ROC curves (AUC > 0.81)
+- Traditional methods (Fuzzy, MCDA, AHP) focus on interpretability over ROC metrics
 
 ## Notes
 
-- The best performing models are Random Forest, Gradient Boosting, and SVM
-- Some models (Fuzzy, MCDA, AHP) have lower accuracy but provide better interpretability
-- All models were trained on the same dataset with consistent preprocessing
-- Model selection should consider both performance and interpretability needs
-- Ensemble methods (RF, GB, XGBoost) provide the most robust predictions
+- XGBoost, Gradient Boosting, and Random Forest provide the most accurate predictions
+- ANN and KNN offer good balance between accuracy and computational efficiency
+- Traditional methods (Fuzzy, MCDA, AHP) prioritize interpretability over accuracy
+- All models support three-level risk classification (Low, Medium, High)
+- Model selection should balance accuracy, speed, and interpretability needs

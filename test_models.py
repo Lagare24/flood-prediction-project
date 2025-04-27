@@ -152,19 +152,19 @@ def test_model(model_name, input_values):
         if model_name == 'Fuzzy Technique':
             prediction, probability = fuzzy_prediction(input_values)
             if prediction is not None:
-                print(f"\nPrediction: {'Flood' if prediction else 'No Flood'}")
+                print(f"\nPrediction: {'High Risk' if probability > 0.66 else 'Medium Risk' if probability > 0.33 else 'Low Risk'}")
                 print(f"Flood Risk Score: {probability:.2%}")
             else:
                 print("\nError: Could not compute fuzzy prediction")
         
         elif model_name == 'MCDA':
             prediction, score = mcda_prediction(input_values)
-            print(f"\nPrediction: {'Flood' if prediction else 'No Flood'}")
+            print(f"\nPrediction: {'High Risk' if score > 0.66 else 'Medium Risk' if score > 0.33 else 'Low Risk'}")
             print(f"MCDA Score: {score:.2%}")
         
         elif model_name == 'AHP':
             prediction, score = ahp_prediction(input_values)
-            print(f"\nPrediction: {'Flood' if prediction else 'No Flood'}")
+            print(f"\nPrediction: {'High Risk' if score > 0.66 else 'Medium Risk' if score > 0.33 else 'Low Risk'}")
             print(f"AHP Score: {score:.2%}")
         
         else:
@@ -172,12 +172,14 @@ def test_model(model_name, input_values):
             model = load_model(model_name)
             prediction = model.predict(X_scaled)
             try:
-                probability = model.predict_proba(X_scaled)[:, 1]
-                print(f"\nPrediction: {'Flood' if prediction[0] == 1 else 'No Flood'}")
-                print(f"Probability: {probability[0]:.2%}")
+                probability = model.predict_proba(X_scaled)[0]
+                risk_level = 'High Risk' if probability[2] > 0.5 else 'Medium Risk' if probability[1] > 0.5 else 'Low Risk'
+                print(f"\nPrediction: {risk_level}")
+                print(f"Probabilities: Low: {probability[0]:.2%}, Medium: {probability[1]:.2%}, High: {probability[2]:.2%}")
             except:
-                print(f"\nPrediction: {'Flood' if prediction[0] == 1 else 'No Flood'}")
-                print("Note: Probability not available for this model")
+                risk_level = 'High Risk' if prediction[0] == 2 else 'Medium Risk' if prediction[0] == 1 else 'Low Risk'
+                print(f"\nPrediction: {risk_level}")
+                print("Note: Detailed probabilities not available for this model")
     
     except Exception as e:
         print(f"\nError: {str(e)}")
@@ -185,8 +187,9 @@ def test_model(model_name, input_values):
     print("-" * 50)
 
 def main():
-    # List of all models
+    # List of all models with their descriptions
     models = [
+        'Logistic Regression',
         'SVM',
         'Random Forest',
         'KNN',
