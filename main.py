@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, label_binarize
 from sklearn.metrics import roc_curve, auc, accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
@@ -38,55 +38,19 @@ def load_data(csv_path):
 
 
 # Function to preprocess data
-def calculate_flood_status(row):
-    # Initialize score
-    score = 0
-    
-    # Rainfall scoring
-    if row['Rainfall'] > 30: score += 5  # Very High
-    elif 15 <= row['Rainfall'] <= 30: score += 4  # High
-    elif 7.5 <= row['Rainfall'] < 15: score += 3  # Medium
-    elif 2.5 <= row['Rainfall'] < 7.5: score += 2  # Low
-    else: score += 1  # Very Low
-    
-    # Water Level scoring
-    if row['Water Level'] > 4500: score += 5  # Very High
-    elif 4300 <= row['Water Level'] <= 4400: score += 4  # High
-    elif 4200 <= row['Water Level'] < 4300: score += 3  # Medium
-    elif 4000 <= row['Water Level'] < 4200: score += 2  # Low
-    else: score += 1  # Very Low
-    
-    # Elevation scoring
-    if 0 <= row['Elevation'] <= 5: score += 5  # Very High
-    elif 6 <= row['Elevation'] <= 20: score += 4  # High
-    elif 21 <= row['Elevation'] <= 50: score += 3  # Medium
-    elif 51 <= row['Elevation'] <= 150: score += 2  # Low
-    else: score += 1  # Very Low
-    
-    # Slope scoring
-    if 0 <= row['Slope'] <= 3: score += 5  # Very High
-    elif 3 < row['Slope'] <= 8: score += 4  # High
-    elif 8 < row['Slope'] <= 18: score += 3  # Medium
-    elif 18 < row['Slope'] <= 30: score += 2  # Low
-    else: score += 1  # Very Low
-    
-    # Distance from River scoring
-    if 0 <= row['Distance from River'] <= 100: score += 5  # Very High
-    elif 100 < row['Distance from River'] <= 200: score += 4  # High
-    elif 200 < row['Distance from River'] <= 300: score += 3  # Medium
-    elif 300 < row['Distance from River'] <= 400: score += 2  # Low
-    else: score += 1  # Very Low
-    
-    # Calculate final flood status based on average score
-    avg_score = score / 5  # 5 parameters
-    
-    if avg_score >= 4: return 2  # High flood risk
-    elif avg_score >= 3: return 1  # Medium flood risk
-    else: return 0  # Low flood risk
-
 def preprocess_data(df):
     # Handle missing values
     df = df.fillna(method='ffill')
+    
+    # Map descriptive flood status labels to numeric values for training
+    flood_status_map = {
+        "Very Low": 0,
+        "Low": 1,
+        "Medium": 2,
+        "High": 3,
+        "Very High": 4
+    }
+    df['Flood Status'] = df['Flood Status'].map(flood_status_map)
     
     # Extract features and target
     X = df[['Rainfall', 'Water Level', 'Elevation', 'Slope', 'Distance from River']]
@@ -116,68 +80,58 @@ def implement_fuzzy_system(X_train, y_train, X_test):
     distance = ctrl.Antecedent(np.arange(0, 500, 1), 'distance')
     flood_risk = ctrl.Consequent(np.arange(0, 3, 1), 'flood_risk')
 
-    # Define membership functions for rainfall
+    # Define membership functions based on provided ranges
     rainfall['very_low'] = fuzz.trimf(rainfall.universe, [0, 0, 2.5])
-    rainfall['low'] = fuzz.trimf(rainfall.universe, [0, 2.5, 7.5])
-    rainfall['medium'] = fuzz.trimf(rainfall.universe, [7.5, 15, 30])
-    rainfall['high'] = fuzz.trimf(rainfall.universe, [15, 30, 100])
+    rainfall['low'] = fuzz.trimf(rainfall.universe, [2.5, 7.5, 7.5])
+    rainfall['medium'] = fuzz.trimf(rainfall.universe, [7.5, 15, 15])
+    rainfall['high'] = fuzz.trimf(rainfall.universe, [15, 30, 30])
     rainfall['very_high'] = fuzz.trimf(rainfall.universe, [30, 100, 100])
 
-    # Define membership functions for water level
     water_level['very_low'] = fuzz.trimf(water_level.universe, [0, 0, 4000])
-    water_level['low'] = fuzz.trimf(water_level.universe, [4000, 4000, 4200])
+    water_level['low'] = fuzz.trimf(water_level.universe, [4000, 4200, 4200])
     water_level['medium'] = fuzz.trimf(water_level.universe, [4200, 4300, 4300])
     water_level['high'] = fuzz.trimf(water_level.universe, [4300, 4400, 4400])
-    water_level['very_high'] = fuzz.trimf(water_level.universe, [4400, 4500, 5000])
+    water_level['very_high'] = fuzz.trimf(water_level.universe, [4400, 5000, 5000])
 
-    # Define membership functions for elevation
-    elevation['very_high'] = fuzz.trimf(elevation.universe, [0, 0, 5])
-    elevation['high'] = fuzz.trimf(elevation.universe, [5, 10, 20])
-    elevation['medium'] = fuzz.trimf(elevation.universe, [20, 35, 50])
-    elevation['low'] = fuzz.trimf(elevation.universe, [50, 100, 150])
     elevation['very_low'] = fuzz.trimf(elevation.universe, [150, 200, 200])
+    elevation['low'] = fuzz.trimf(elevation.universe, [50, 150, 150])
+    elevation['medium'] = fuzz.trimf(elevation.universe, [20, 50, 50])
+    elevation['high'] = fuzz.trimf(elevation.universe, [5, 20, 20])
+    elevation['very_high'] = fuzz.trimf(elevation.universe, [0, 5, 5])
 
-    # Define membership functions for slope
-    slope['very_high'] = fuzz.trimf(slope.universe, [0, 0, 3])
-    slope['high'] = fuzz.trimf(slope.universe, [3, 5, 8])
-    slope['medium'] = fuzz.trimf(slope.universe, [8, 13, 18])
-    slope['low'] = fuzz.trimf(slope.universe, [18, 24, 30])
     slope['very_low'] = fuzz.trimf(slope.universe, [30, 30, 30])
+    slope['low'] = fuzz.trimf(slope.universe, [18, 30, 30])
+    slope['medium'] = fuzz.trimf(slope.universe, [8, 18, 18])
+    slope['high'] = fuzz.trimf(slope.universe, [3, 8, 8])
+    slope['very_high'] = fuzz.trimf(slope.universe, [0, 3, 3])
 
-    # Define membership functions for distance
-    distance['very_high'] = fuzz.trimf(distance.universe, [0, 0, 100])
-    distance['high'] = fuzz.trimf(distance.universe, [100, 150, 200])
-    distance['medium'] = fuzz.trimf(distance.universe, [200, 250, 300])
-    distance['low'] = fuzz.trimf(distance.universe, [300, 350, 400])
     distance['very_low'] = fuzz.trimf(distance.universe, [400, 500, 500])
+    distance['low'] = fuzz.trimf(distance.universe, [300, 400, 400])
+    distance['medium'] = fuzz.trimf(distance.universe, [200, 300, 300])
+    distance['high'] = fuzz.trimf(distance.universe, [100, 200, 200])
+    distance['very_high'] = fuzz.trimf(distance.universe, [0, 100, 100])
 
-    # Define membership functions for flood risk (0=Low, 1=Medium, 2=High)
     flood_risk['low'] = fuzz.trimf(flood_risk.universe, [0, 0, 1])
     flood_risk['medium'] = fuzz.trimf(flood_risk.universe, [0, 1, 2])
     flood_risk['high'] = fuzz.trimf(flood_risk.universe, [1, 2, 2])
 
     # Define rules
     rules = [
-        # High flood risk rules
         ctrl.Rule((rainfall['very_high'] | rainfall['high']) & 
-                 (water_level['very_high'] | water_level['high']) & 
-                 (elevation['very_high'] | elevation['high']) & 
-                 (slope['very_high'] | slope['high']) & 
-                 (distance['very_high'] | distance['high']), 
-                 flood_risk['high']),
-        
-        # Medium flood risk rules
+                  (water_level['very_high'] | water_level['high']) & 
+                  (elevation['very_high'] | elevation['high']) & 
+                  (slope['very_high'] | slope['high']) & 
+                  (distance['very_high'] | distance['high']), 
+                  flood_risk['high']),
         ctrl.Rule((rainfall['medium'] | water_level['medium'] | elevation['medium'] | 
                   slope['medium'] | distance['medium']), 
-                 flood_risk['medium']),
-        
-        # Low flood risk rules
+                  flood_risk['medium']),
         ctrl.Rule((rainfall['very_low'] | rainfall['low']) & 
-                 (water_level['very_low'] | water_level['low']) & 
-                 (elevation['very_low'] | elevation['low']) & 
-                 (slope['very_low'] | slope['low']) & 
-                 (distance['very_low'] | distance['low']), 
-                 flood_risk['low'])
+                  (water_level['very_low'] | water_level['low']) & 
+                  (elevation['very_low'] | elevation['low']) & 
+                  (slope['very_low'] | slope['low']) & 
+                  (distance['very_low'] | distance['low']), 
+                  flood_risk['low'])
     ]
 
     # Create control system
@@ -194,8 +148,6 @@ def implement_fuzzy_system(X_train, y_train, X_test):
             flood_sim.input['slope'] = X_test[i, 3]
             flood_sim.input['distance'] = X_test[i, 4]
             flood_sim.compute()
-            
-            # Convert continuous output to discrete classes
             risk_value = flood_sim.output['flood_risk']
             if risk_value < 0.5:
                 y_pred.append(0)  # Low risk
@@ -204,8 +156,10 @@ def implement_fuzzy_system(X_train, y_train, X_test):
             else:
                 y_pred.append(2)  # High risk
         except:
-            # If fuzzy system fails, predict medium risk as default
-            y_pred.append(1)
+            y_pred.append(1)  # Default to medium risk
+
+    # Save the fuzzy control system
+    joblib.dump(flood_ctrl, 'output/models/fuzzy_technique.joblib')
 
     return np.array(y_pred)
 
@@ -237,83 +191,75 @@ def calculate_entropy_weights(X):
 def implement_mcda(X_train, y_train, X_test):
     # Calculate weights using entropy method
     weights = calculate_entropy_weights(X_train)
-    
+
     # Normalize test data
     X_test_norm = (X_test - X_test.min(axis=0)) / (X_test.max(axis=0) - X_test.min(axis=0))
-    
+
     # Calculate weighted sum scores
     scores = np.dot(X_test_norm, weights)
-    
+
     # Convert scores to flood risk levels
     y_pred = np.zeros(len(X_test), dtype=int)
     y_pred[scores >= np.percentile(scores, 66.67)] = 2  # High risk
     y_pred[(scores >= np.percentile(scores, 33.33)) & (scores < np.percentile(scores, 66.67))] = 1  # Medium risk
     y_pred[scores < np.percentile(scores, 33.33)] = 0  # Low risk
-    
+
+    # Save MCDA weights
+    joblib.dump(weights, 'output/models/mcda_weights.joblib')
+
     return y_pred
 
 
 # Function to implement AHP
 def implement_ahp(X_train, y_train, X_test):
-    # Define pairwise comparison matrix (example values)
+    # Define pairwise comparison matrix based on provided values
     comparison_matrix = np.array([
-        [1.0, 2.0, 3.0, 4.0, 5.0],  # Rainfall
-        [0.5, 1.0, 2.0, 3.0, 4.0],  # Water Level
-        [0.33, 0.5, 1.0, 2.0, 3.0],  # Elevation
-        [0.25, 0.33, 0.5, 1.0, 2.0], # Slope
-        [0.2, 0.25, 0.33, 0.5, 1.0]  # Distance
+        [1.0, 0.151100596, -2.01E-17, -3.80E-18, -1.31E-17],
+        [1/0.151100596, 1.0, 1.24E-16, 6.58E-17, -1.36E-16],
+        [1/(-2.01E-17), 1/(1.24E-16), 1.0, 0.005164989, -0.517427763],
+        [1/(-3.80E-18), 1/(6.58E-17), 1/0.005164989, 1.0, 0.010965203],
+        [1/(-1.31E-17), 1/(1.36E-16), 1/(-0.517427763), 1/0.010965203, 1.0]
     ])
-    
+
     # Calculate weights using eigenvector method
     eigenvalues, eigenvectors = np.linalg.eig(comparison_matrix)
     weights = np.real(eigenvectors[:, 0] / np.sum(eigenvectors[:, 0]))
-    
+
     # Normalize test data
     X_test_norm = (X_test - X_test.min(axis=0)) / (X_test.max(axis=0) - X_test.min(axis=0))
-    
+
     # Calculate weighted sum scores
     scores = np.dot(X_test_norm, weights)
-    
+
     # Convert scores to flood risk levels
     y_pred = np.zeros(len(X_test), dtype=int)
     y_pred[scores >= np.percentile(scores, 66.67)] = 2  # High risk
     y_pred[(scores >= np.percentile(scores, 33.33)) & (scores < np.percentile(scores, 66.67))] = 1  # Medium risk
     y_pred[scores < np.percentile(scores, 33.33)] = 0  # Low risk
-    
+
+    # Save AHP weights
+    joblib.dump(weights, 'output/models/ahp_weights.joblib')
+
     return y_pred
 
 
 # Function to save model and predictions
 def save_model_and_predictions(model, model_name, X_test, y_test, y_pred, y_pred_proba):
-    # Save the model
-    if model is not None:
-        joblib.dump(model, f'output/models/{model_name.lower().replace(" ", "_")}.joblib')
-    elif model_name == 'Fuzzy Technique':
-        # Save fuzzy system parameters
-        fuzzy_params = {
-            'rainfall_range': (0, 100),
-            'water_level_range': (0, 5000),
-            'elevation_range': (0, 200),
-            'slope_range': (0, 30),
-            'distance_range': (0, 500),
-            'flood_risk_range': (0, 2),
-            'membership_levels': ['very_low', 'low', 'medium', 'high', 'very_high'],
-            'output_classes': ['low', 'medium', 'high']
-        }
-        joblib.dump(fuzzy_params, f'output/models/fuzzy_technique.joblib')
-    elif model_name == 'MCDA':
-        # Save MCDA parameters
-        mcda_params = {
-            'method': 'entropy_weighting',
-            'normalization': 'minmax',
-            'criteria_weights': calculate_entropy_weights(X_test).tolist()
-        }
-        joblib.dump(mcda_params, f'output/models/mcda.joblib')
+    # Map numeric predictions back to descriptive labels
+    flood_status_map_reverse = {
+        0: "Very Low",
+        1: "Low",
+        2: "Medium",
+        3: "High",
+        4: "Very High"
+    }
+    y_test_labels = pd.Series(y_test).map(flood_status_map_reverse)
+    y_pred_labels = pd.Series(y_pred).map(flood_status_map_reverse)
     
-    # Save predictions
+    # Create predictions DataFrame
     predictions_df = pd.DataFrame({
-        'Actual': y_test,
-        'Predicted': y_pred
+        'Actual': y_test_labels.reset_index(drop=True),
+        'Predicted': y_pred_labels.reset_index(drop=True)
     })
     
     # Add probability columns for each class if available
@@ -322,6 +268,7 @@ def save_model_and_predictions(model, model_name, X_test, y_test, y_pred, y_pred
         for i in range(n_classes):
             predictions_df[f'Probability_Class_{i}'] = y_pred_proba[:, i]
     
+    # Save predictions to CSV
     predictions_df.to_csv(f'output/predictions/{model_name.lower().replace(" ", "_")}_predictions.csv', index=False)
 
 
@@ -329,68 +276,46 @@ def save_model_and_predictions(model, model_name, X_test, y_test, y_pred, y_pred
 def train_evaluate_model(model, X_train, X_test, y_train, y_test, model_name):
     start_time = time.time()
     print(f"\nStarted training {model_name} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    
-    if model_name == 'Fuzzy Technique':
-        y_pred = implement_fuzzy_system(X_train, y_train, X_test)
-        y_pred_proba = None
-        fpr, tpr, roc_auc = None, None, None
-    elif model_name == 'MCDA':
-        y_pred = implement_mcda(X_train, y_train, X_test)
-        y_pred_proba = None
-        fpr, tpr, roc_auc = None, None, None
-    elif model_name == 'AHP':
-        y_pred = implement_ahp(X_train, y_train, X_test)
+
+    if model_name in ['Fuzzy Technique', 'MCDA', 'AHP']:
+        # Custom implementations
+        y_pred = implement_fuzzy_system(X_train, y_train, X_test) if model_name == 'Fuzzy Technique' else \
+                 implement_mcda(X_train, y_train, X_test) if model_name == 'MCDA' else \
+                 implement_ahp(X_train, y_train, X_test)
         y_pred_proba = None
         fpr, tpr, roc_auc = None, None, None
     else:
-        # Train model
+        # Train scikit-learn model
         model.fit(X_train, y_train)
+        
+        # Save the trained model
+        joblib.dump(model, f'output/models/{model_name.lower().replace(" ", "_")}.joblib')
         
         # Make predictions
         y_pred = model.predict(X_test)
         try:
             y_pred_proba = model.predict_proba(X_test)
-            # For multiclass ROC, we'll use macro averaging
-            fpr = dict()
-            tpr = dict()
-            roc_auc = dict()
-            n_classes = len(np.unique(y_test))
-            
-            for i in range(n_classes):
-                fpr[i], tpr[i], _ = roc_curve(y_test == i, y_pred_proba[:, i])
-                roc_auc[i] = auc(fpr[i], tpr[i])
-            
-            # Compute macro-average ROC curve and ROC area
-            fpr['macro'] = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
-            tpr['macro'] = np.zeros_like(fpr['macro'])
-            for i in range(n_classes):
-                tpr['macro'] += np.interp(fpr['macro'], fpr[i], tpr[i])
-            tpr['macro'] /= n_classes
-            roc_auc['macro'] = auc(fpr['macro'], tpr['macro'])
-            
-            # Use macro averages for final values
-            fpr = fpr['macro']
-            tpr = tpr['macro']
-            roc_auc = roc_auc['macro']
+            # Compute ROC curves and AUC
+            fpr, tpr, roc_auc = compute_roc_auc(y_test, y_pred_proba)
         except (AttributeError, ValueError):
             y_pred_proba = None
             fpr, tpr, roc_auc = None, None, None
-    
-    # Calculate metrics with macro averaging for multiclass
+
+    # Calculate metrics
     accuracy = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred, average='macro')
     recall = recall_score(y_test, y_pred, average='macro')
     f1 = f1_score(y_test, y_pred, average='macro')
     cm = confusion_matrix(y_test, y_pred)
-    
-    # Save results
+
+    # Save predictions
     save_model_and_predictions(model, model_name, X_test, y_test, y_pred, y_pred_proba)
-    
+
     end_time = time.time()
     training_time = end_time - start_time
     print(f"Finished training {model_name} at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print(f"Training time: {training_time:.2f} seconds ({training_time/60:.2f} minutes)")
-    
+
     return {
         'model': model,
         'model_name': model_name,
@@ -432,6 +357,27 @@ def plot_feature_importance(model, feature_names, model_name):
         plt.close()
 
 
+def compute_roc_auc(y_test, y_pred_proba):
+    # Binarize the labels for multiclass ROC computation
+    n_classes = y_pred_proba.shape[1]
+    y_test_binarized = label_binarize(y_test, classes=range(n_classes))
+    
+    fpr = {}
+    tpr = {}
+    roc_auc = {}
+    
+    for i in range(n_classes):
+        fpr[i], tpr[i], _ = roc_curve(y_test_binarized[:, i], y_pred_proba[:, i])
+        roc_auc[i] = auc(fpr[i], tpr[i])
+    
+    # Compute micro-average ROC curve and AUC
+    fpr["micro"], tpr["micro"], _ = roc_curve(y_test_binarized.ravel(), y_pred_proba.ravel())
+    roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+    
+    # Return the micro-average ROC curve and AUC
+    return fpr["micro"], tpr["micro"], roc_auc["micro"]
+
+
 # Main function
 def main():
     total_start_time = time.time()
@@ -439,7 +385,7 @@ def main():
     
     # Load data
     print("\nLoading and preprocessing data...")
-    csv_path = "data/THESIS - GIS DATA - FLOOD SCENARIOS.csv"
+    csv_path = "data/THESIS - GIS DATA - FLOOD SCENARIOS_UPDATED.csv"
     df = load_data(csv_path)
 
     # Preprocess data
@@ -451,9 +397,16 @@ def main():
     print("-" * 50)
     print(f"Total samples: {len(df)}")
     flood_counts = df['Flood Status'].value_counts().sort_index()
+    flood_status_map_reverse = {
+        0: "Very Low",
+        1: "Low",
+        2: "Medium",
+        3: "High",
+        4: "Very High"
+    }
     for status, count in flood_counts.items():
-        risk_level = 'Low' if status == 0 else 'Medium' if status == 1 else 'High'
-        print(f"{risk_level} risk events: {count} ({count/len(df)*100:.2f}%)")
+        risk_level = flood_status_map_reverse[status]
+        print(f"{risk_level}: {count} samples ({count / len(df) * 100:.2f}%)")
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -461,44 +414,38 @@ def main():
     # Define models and their hyperparameters
     models_config = {
         'Logistic Regression': {
-            'model': Pipeline([
-                ('scaler', StandardScaler()),
-                ('estimator', LogisticRegression(multi_class='ovr', max_iter=1000))
-            ]),
+            'model': LogisticRegression(multi_class='ovr', max_iter=1000),
             'param_grid': {
-                'estimator__C': [0.1, 1, 10],
-                'estimator__penalty': ['l1', 'l2'],
-                'estimator__solver': ['liblinear', 'saga']
+                'C': [0.1, 1, 10],
+                'solver': ['lbfgs', 'liblinear']
             }
         },
         'SVM': {
             'model': SVC(probability=True),
             'param_grid': {
                 'C': [0.1, 1, 10],
-                'kernel': ['linear', 'rbf'],
-                'gamma': ['scale', 'auto']
+                'kernel': ['rbf', 'linear']
             }
         },
         'Random Forest': {
             'model': RandomForestClassifier(),
             'param_grid': {
-                'n_estimators': [50, 100, 200],
-                'max_depth': [None, 10, 20, 30],
-                'min_samples_split': [2, 5, 10]
+                'n_estimators': [100, 200],
+                'max_depth': [10, 20, None],
+                'min_samples_split': [2, 5]
             }
         },
         'KNN': {
             'model': KNeighborsClassifier(),
             'param_grid': {
-                'n_neighbors': [3, 5, 7, 9, 11],
-                'weights': ['uniform', 'distance'],
-                'p': [1, 2]
+                'n_neighbors': [3, 5, 7],
+                'weights': ['uniform', 'distance']
             }
         },
         'ANN': {
-            'model': MLPClassifier(max_iter=5000),  # Increase max iterations
+            'model': MLPClassifier(max_iter=1000),
             'param_grid': {
-                'hidden_layer_sizes': [(50,), (100,), (50, 25)],
+                'hidden_layer_sizes': [(100,), (50, 50)],
                 'activation': ['relu', 'tanh'],
                 'solver': ['adam'],
                 'learning_rate_init': [0.001, 0.01],

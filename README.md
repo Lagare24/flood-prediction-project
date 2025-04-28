@@ -4,11 +4,43 @@
 
 ## Project Overview
 
-This project implements multiple machine learning and decision-making approaches to predict flood events based on environmental factors. It includes traditional ML models (SVM, Random Forest, etc.) and alternative approaches (Fuzzy Logic, MCDA, AHP) for comparison.
+This project implements a comprehensive flood prediction system that combines multiple approaches to assess flood risk based on environmental factors. The system integrates:
+
+### 1. Machine Learning Models
+
+- **Tree-based Models**: XGBoost, Random Forest, Gradient Boosting
+- **Neural Networks**: Multi-layer Perceptron (ANN)
+- **Traditional ML**: SVM, KNN, Logistic Regression
+
+### 2. Decision Support Systems
+
+- **Fuzzy Logic**: Handles uncertainty in environmental measurements with refined membership functions and rules.
+- **Multi-Criteria Decision Analysis (MCDA)**: Balances multiple risk factors using entropy-based weights.
+- **Analytic Hierarchy Process (AHP)**: Structured expert knowledge integration with validated pairwise comparison matrices.
+
+### 3. Key Features
+
+- Real-time flood risk assessment
+- Multi-level risk classification (Very Low, Low, Medium, High, Very High)
+- Comparative model analysis
+- Interactive testing interface
+- Detailed performance metrics
+- Visualization tools (e.g., feature importance, ROC curves, confusion matrices)
+
+### 4. Applications
+
+- Early warning systems
+- Urban planning
+- Disaster preparedness
+- Risk management
+- Policy decision support
+
+---
 
 ## Setup Instructions
 
 ### Prerequisites
+
 - Python 3.8 or higher
 - Git
 
@@ -16,28 +48,87 @@ This project implements multiple machine learning and decision-making approaches
 
 1. Clone the repository:
 
-   git clone https://github.com/Lagare24/flood-prediction-project.git
-   cd flood-prediction-project
+```bash
+git clone https://github.com/Lagare24/flood-prediction-project.git
+cd flood-prediction-project
+```
 
 2. Create and activate a virtual environment (recommended):
 
-   For Windows:
-   python -m venv .venv
-   .venv\Scripts\activate
+For Windows:
 
-   For Linux/MacOS:
-   python -m venv .venv
-   source .venv/bin/activate
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+```
+
+For Linux/MacOS:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
 
 3. Install required packages:
 
-   pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
+```
+
+### Updating the Project
+
+To get the latest changes:
+
+1. Save any local changes:
+
+```bash
+git add .
+git commit -m "Save local changes"
+```
+
+2. Fetch updates from remote:
+
+```bash
+git fetch origin
+# View changes
+git log --oneline HEAD..origin/main
+```
+
+3. Pull the changes:
+
+```bash
+git pull origin main
+```
+
+4. If there are conflicts:
+   - Git will mark the conflicting files
+   - Resolve conflicts in your editor
+   - Commit the resolved changes:
+
+```bash
+git add .
+git commit -m "Resolve merge conflicts"
+```
+
+5. Update dependencies if needed:
+
+```bash
+pip install -r requirements.txt
+```
+
+Note: If you haven't made any local changes, you can simply run:
+
+```bash
+git fetch origin
+git pull origin main
+```
 
 ## Project Structure
 
 ```
 flood-prediction-project/
 ├── data/                  # Dataset directory
+│   └── THESIS - GIS DATA - FLOOD SCENARIOS.csv  # Main dataset
 ├── output/               # Generated after training
 │   ├── models/          # Saved model files
 │   ├── predictions/     # Model predictions
@@ -45,8 +136,47 @@ flood-prediction-project/
 ├── main.py              # Model training script
 ├── test_models.py       # Interactive testing script
 ├── test_predictions.py  # Batch prediction script
+├── update_flood_status.py  # Risk scoring system
 └── requirements.txt     # Package dependencies
 ```
+
+### Key Files Description
+
+1. **main.py**
+
+   - Core script for training all models
+   - Implements grid search for hyperparameter tuning
+   - Generates performance metrics and visualizations
+   - Saves trained models and predictions
+
+2. **test_models.py**
+
+   - Interactive testing interface
+   - Supports both example and custom input values
+   - Shows predictions from all models side by side
+   - Includes probability scores for each risk level
+
+3. **test_predictions.py**
+
+   - Batch prediction interface
+   - Detailed reporting with confidence scores
+   - Supports CSV input for multiple scenarios
+   - Generates comprehensive prediction reports
+
+4. **update_flood_status.py**
+   - Implements a rule-based scoring system
+   - Evaluates flood risk based on 5 key parameters:
+     - Rainfall Rate (0-100 mm/hr)
+     - Water Level (0-5000 mm)
+     - Elevation (0-1000 m)
+     - Slope (0-90 degrees)
+     - Distance from River (0-5000 m)
+   - Uses weighted scoring for each parameter
+   - Classifies risk into three levels:
+     - High Risk (avg score ≥ 4)
+     - Medium Risk (3 ≤ avg score < 4)
+     - Low Risk (avg score < 3)
+   - Updates the main dataset with calculated risk levels
 
 ## Usage
 
@@ -54,31 +184,71 @@ flood-prediction-project/
 
 To train all models and generate performance metrics, run:
 
-   python main.py
+```bash
+python main.py
+```
 
 This will:
-- Train all models using the dataset
+
+- Load and preprocess the dataset
+- Perform train-test split (80-20)
+- Train all models using grid search for optimal parameters
+- Generate performance metrics (accuracy, precision, recall, F1, AUC)
+- Create visualization plots:
+  - Confusion matrices
+  - ROC curves
+  - Feature importance (for tree-based models)
 - Save trained models in `output/models/`
-- Generate performance plots in `output/plots/`
-- Save prediction results in `output/predictions/`
+- Save predictions in `output/predictions/`
 
-### 2. Testing Models
+Training time varies by model:
 
-Two testing scripts are provided:
+- Fast (< 1 min): Logistic Regression, KNN, AHP, MCDA
+- Medium (1-5 min): SVM, Random Forest, Gradient Boosting
+- Slower (5+ min): XGBoost, ANN (depends on convergence)
 
-#### Hard-coded input Testing (`test_models.py`)
-Run:
-   python test_models.py
-- Provides static input for twsting models
-- Options to use example values or enter custom values
-- Shows predictions from all models for comparison
+### 2. Testing Model
 
-#### Interactive Testing (`test_predictions.py`)
-Run:
-   python test_predictions.py
-- Provides an interactive interface for testing models
-- Allows testing with user interaction, input value via prompt
-- Generates detailed prediction reports
+Three testing approaches are provided:
+
+#### B. Batch Prediction Testing (`test_predictions.py`)
+
+```bash
+python test_predictions.py
+```
+
+Features:
+
+- Handles multiple scenarios at once
+- Supports CSV input files
+- Generates detailed reports including:
+  - Prediction summaries
+  - Confidence metrics
+  - Model agreement analysis
+  - Risk level distribution
+- Export options:
+  - CSV format for further analysis
+  - Summary statistics
+  - Comparison charts
+
+#### C. Risk Scoring System (`update_flood_status.py`)
+
+```bash
+python update_flood_status.py
+```
+
+Features:
+
+- Rule-based scoring system
+- Parameter-specific risk assessment:
+  - Rainfall intensity scoring
+  - Water level thresholds
+  - Elevation risk zones
+  - Slope impact analysis
+  - Distance-based vulnerability
+- Weighted risk calculation
+- Automated dataset updates
+- Summary statistics output
 
 ## Output Files
 
@@ -86,19 +256,21 @@ Run:
 
 Trained models are saved in `output/models/`:
 
-- `svm.joblib`: Support Vector Machine model
+- `svm.joblib`: Support Vector Machine (SVM) model
 - `random_forest.joblib`: Random Forest model
-- `knn.joblib`: K-Nearest Neighbors model
-- `ann.joblib`: Artificial Neural Network model
+- `knn.joblib`: K-Nearest Neighbors (KNN) model
+- `ann.joblib`: Artificial Neural Network (ANN) model
 - `xgboost.joblib`: XGBoost model
 - `gradient_boosting.joblib`: Gradient Boosting model
-- `fuzzy_technique.joblib`: Fuzzy Logic model
-- `mcda.joblib`: Multi-Criteria Decision Analysis model
-- `ahp.joblib`: Analytic Hierarchy Process model
+- `logistic_regression.joblib`: Logistic Regression model
+- `fuzzy_technique.joblib`: Fuzzy Logic model (handles uncertainty with refined membership functions and rules)
+- `mcda_weights.joblib`: Multi-Criteria Decision Analysis (MCDA) model (uses entropy-based weights for decision-making)
+- `ahp_weights.joblib`: Analytic Hierarchy Process (AHP) model (uses pairwise comparison matrices for structured decision-making)
 
 ### 2. Predictions
 
 Prediction results in `output/predictions/`:
+
 - Individual CSV files for each model (e.g., `svm_predictions.csv`)
 - Contains actual values, predicted values, and prediction probabilities
 
@@ -116,24 +288,69 @@ Visualizations are saved in `output/plots`:
 
 The models expect the following input features:
 
-| Feature | Description | Unit | Range |
-|---------|-------------|------|-------|
-| Rainfall Rate | Rate of rainfall | mm/hr | 0-100 |
-| Water level | Water level in the river | mm | 0-5000 |
-| elevation | Ground elevation at the point | m | 0-1000 |
-| Slope | Ground slope | degrees | 0-90 |
-| Distance from River | Distance from nearest river | m | 0-5000 |
+| Feature             | Description                   | Unit    | Range  |
+| ------------------- | ----------------------------- | ------- | ------ |
+| Rainfall Rate       | Rate of rainfall              | mm/hr   | 0-100  |
+| Water level         | Water level in the river      | mm      | 0-5000 |
+| elevation           | Ground elevation at the point | m       | 0-1000 |
+| Slope               | Ground slope                  | degrees | 0-90   |
+| Distance from River | Distance from nearest river   | m       | 0-5000 |
 
 ### Data Format
 
 Input data should be provided as a CSV file with the following structure:
 
 ```csv
-DATE,Rainfall Rate,Water level,elevation,Slope,Distance from River
-25/04/2025,45.2,2500.0,150.3,12.5,300.0
+Rainfall,Water Level,Elevation,Slope,Distance from River
+19.93,4399.39,8.3,5.59,322.0
 ```
 
+### Flood Status Values
+
+The flood risk is encoded as integer values:
+
+- **0**: Low Risk
+
+  - Areas with minimal flooding probability
+  - Good drainage and elevated terrain
+  - Low historical flood incidents
+
+- **1**: Medium Risk
+
+  - Moderate chance of flooding
+  - Some vulnerability to heavy rainfall
+  - Occasional historical flooding
+
+- **2**: High Risk
+  - High probability of flooding
+  - Poor drainage or low-lying areas
+  - Frequent historical flooding
+
+These values are used consistently across:
+
+- Training data labels
+- Model predictions
+- Risk scoring system
+- Performance evaluations
+
+The risk levels are determined by:
+
+1. **Rule-based Scoring** (update_flood_status.py):
+
+   - Calculates weighted scores for each parameter
+   - Averages the scores (range 1-5)
+   - Maps to risk levels:
+     - High (2): avg_score ≥ 4
+     - Medium (1): 3 ≤ avg_score < 4
+     - Low (0): avg_score < 3
+
+2. **Historical Data**:
+   - Past flood events
+   - Damage assessments
+   - Expert classifications
+
 Notes:
+
 - DATE format: DD/MM/YYYY
 - Missing values should be marked as empty or NaN
 - The system will automatically handle missing values using forward fill
@@ -141,18 +358,97 @@ Notes:
 
 ## Model Performance Summary
 
-| Model               | Accuracy | Precision | Recall  | F1 Score | AUC     |
-|---------------------|----------|-----------|---------|----------|---------|
-| XGBoost             | 99.98%   | 99.99%   | 99.93%  | 99.96%   | 100%    |
-| Random Forest       | 99.84%   | 99.79%   | 99.44%  | 99.61%   | 100%    |
-| Gradient Boosting   | 99.95%   | 99.97%   | 99.80%  | 99.88%   | 100%    |
-| ANN                 | 99.01%   | 98.65%   | 98.17%  | 98.41%   | 99.93%  |
-| KNN                 | 93.01%   | 92.00%   | 91.89%  | 91.94%   | 98.27%  |
-| SVM                 | 87.80%   | 87.41%   | 81.76%  | 84.18%   | 97.03%  |
-| Logistic Regression | 66.78%   | 78.65%   | 46.69%  | 46.60%   | 81.67%  |
-| Fuzzy Technique     | 56.13%   | 18.71%   | 33.33%  | 23.97%   | N/A     |
-| MCDA                | 30.47%   | 30.47%   | 27.38%  | 26.43%   | N/A     |
-| AHP                 | 42.32%   | 42.32%   | 44.35%  | 38.94%   | N/A     |
+### Performance Metrics
+
+| Model               | Accuracy | Precision | Recall | F1 Score | AUC    | Training Time\* |
+| ------------------- | -------- | --------- | ------ | -------- | ------ | --------------- |
+| XGBoost             | 99.98%   | 99.99%    | 99.93% | 99.96%   | 100%   | 5-10 min        |
+| Random Forest       | 99.84%   | 99.79%    | 99.44% | 99.61%   | 100%   | 1-3 min         |
+| Gradient Boosting   | 99.95%   | 99.97%    | 99.80% | 99.88%   | 100%   | 2-4 min         |
+| ANN                 | 99.01%   | 98.65%    | 98.17% | 98.41%   | 99.93% | 5-15 min        |
+| KNN                 | 93.01%   | 92.00%    | 91.89% | 91.94%   | 98.27% | < 1 min         |
+| SVM                 | 87.80%   | 87.41%    | 81.76% | 84.18%   | 97.03% | 2-5 min         |
+| Logistic Regression | 66.78%   | 65.92%    | 64.31% | 65.10%   | 81.23% | < 1 min         |
+| Fuzzy Technique     | 56.13%   | 55.87%    | 54.92% | 55.39%   | N/A    | < 1 min         |
+| MCDA                | 30.47%   | 30.47%    | 27.38% | 26.43%   | N/A    | < 1 min         |
+| AHP                 | 42.32%   | 42.32%    | 44.35% | 38.94%   | N/A    | < 1 min         |
+
+\*Training times are approximate and may vary based on hardware
+
+### Model Selection Guide
+
+#### High Accuracy Requirements
+
+1. **XGBoost** (99.98% accuracy)
+
+   - Best overall performance
+   - Excellent for real-time predictions
+   - Handles complex feature relationships
+   - Resource-intensive training
+
+2. **Gradient Boosting** (99.95% accuracy)
+
+   - Very close to XGBoost performance
+   - More memory efficient
+   - Faster training time
+   - Good for production deployment
+
+3. **Random Forest** (99.84% accuracy)
+   - Highly reliable and stable
+   - Easy to tune and maintain
+   - Built-in feature importance
+   - Excellent for baseline modeling
+
+#### Balanced Performance
+
+4. **ANN** (99.01% accuracy)
+
+   - Great for complex patterns
+   - Handles non-linear relationships
+   - Requires more training data
+   - Good for automated systems
+
+5. **KNN** (93.01% accuracy)
+
+   - Simple and interpretable
+   - Fast predictions
+   - Good for small-medium datasets
+   - Works well with normalized data
+
+6. **SVM** (87.80% accuracy)
+   - Robust to outliers
+   - Works well with clear margins
+   - Moderate training time
+   - Good for binary decisions
+
+#### Interpretability Focus
+
+7. **Logistic Regression** (66.78% accuracy)
+
+   - Very interpretable
+   - Fast training and prediction
+   - Good for understanding feature impacts
+   - Baseline model for comparison
+
+8. **Fuzzy Technique** (56.13% accuracy)
+
+   - Handles uncertainty well
+   - Human-readable rules
+   - Good for expert systems
+   - Matches human reasoning
+
+9. **AHP** (42.32% accuracy)
+
+   - Structured decision process
+   - Incorporates expert knowledge
+   - Clear criteria weights
+   - Good for policy making
+
+10. **MCDA** (30.47% accuracy) - Multi-criteria evaluation - Transparent methodology - Stakeholder involvement - Policy decision support
+    | Logistic Regression | 66.78% | 78.65% | 46.69% | 46.60% | 81.67% |
+    | Fuzzy Technique | 56.13% | 18.71% | 33.33% | 23.97% | N/A |
+    | MCDA | 30.47% | 30.47% | 27.38% | 26.43% | N/A |
+    | AHP | 42.32% | 42.32% | 44.35% | 38.94% | N/A |
 
 ## How to Use
 
@@ -200,6 +496,7 @@ model = joblib.load('output/models/model_name.joblib')
 ### Performance Analysis
 
 1. **Tree-based Models (Random Forest, Gradient Boosting, XGBoost)**
+
    - XGBoost leads with 99.98% accuracy, followed by Gradient Boosting (99.95%) and Random Forest (99.84%)
    - Near-perfect precision (>99.79%) indicates extremely reliable risk level predictions
    - Excellent recall (>99.44%) shows outstanding ability to detect all risk levels
@@ -209,12 +506,14 @@ model = joblib.load('output/models/model_name.joblib')
      - Distance from river and slope have moderate influence
 
 2. **Support Vector Machine (SVM) and Logistic Regression**
+
    - SVM achieves 87.80% accuracy with good balance between precision and recall
    - Logistic Regression shows moderate performance (66.78% accuracy)
    - Both models perform better than traditional methods but lag behind modern ML approaches
    - Good for interpretability and understanding feature relationships
 
 3. **Artificial Neural Network (ANN)**
+
    - Excellent performance (99.01% accuracy) with optimized architecture
    - Very balanced precision (98.65%) and recall (98.17%)
    - Performs well with both linear and non-linear relationships
@@ -229,12 +528,14 @@ model = joblib.load('output/models/model_name.joblib')
 ### Alternative Approaches
 
 5. **Fuzzy Logic System**
+
    - Moderate performance (56.13% accuracy)
    - Better at capturing uncertainty in measurements
    - Uses intuitive linguistic rules for interpretability
    - Three-level classification (low/medium/high) matches human reasoning
 
 6. **Multi-Criteria Decision Analysis (MCDA)**
+
    - Lower performance (30.47% accuracy)
    - Uses entropy-weighted criteria for objective weighting
    - Transparent and explainable decision process
@@ -247,6 +548,7 @@ model = joblib.load('output/models/model_name.joblib')
    - Good for incorporating expert knowledge and preferences
 
 ### ROC Curve Analysis
+
 - Tree-based models achieve perfect AUC (1.0)
 - ANN and KNN show excellent discrimination (AUC > 0.98)
 - SVM and Logistic Regression maintain good ROC curves (AUC > 0.81)
