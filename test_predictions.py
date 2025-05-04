@@ -2,6 +2,8 @@ import pandas as pd
 import joblib
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
 
 # Load all trained models
 models = {
@@ -11,7 +13,7 @@ models = {
     'ANN': joblib.load('output/models/ann.joblib'),
     'XGBoost': joblib.load('output/models/xgboost.joblib'),
     'Gradient Boosting': joblib.load('output/models/gradient_boosting.joblib'),
-    'Logistic Regression': joblib.load('output/models/logistic_regression.joblib'),  # Added Logistic Regression
+    'Logistic Regression': joblib.load('output/models/logistic_regression.joblib'),
     'AHP': joblib.load('output/models/ahp_weights.joblib'),
     'Fuzzy Technique': joblib.load('output/models/fuzzy_technique.joblib'),
     'MCDA': joblib.load('output/models/mcda_weights.joblib')
@@ -85,36 +87,97 @@ def test_with_custom_input(input_values):
         try:
             if model_name in ['AHP', 'Fuzzy Technique', 'MCDA']:
                 if model_name == 'AHP':
-                    weights = model  # Load the AHP weights
+                    # Extract weights from the saved results
+                    weights = model['weights']
                     # Normalize the input features
                     scaler = MinMaxScaler()
                     features_norm = scaler.fit_transform(features)
                     score = np.dot(features_norm, weights)[0]
-                    risk_level = flood_status_map_reverse[2] if score > np.percentile(weights, 66.67) else \
-                                 flood_status_map_reverse[1] if score > np.percentile(weights, 33.33) else \
-                                 flood_status_map_reverse[0]
-                    print(f"{model_name:<20} {risk_level:<15} Score: {score:.2f}")
+                    
+                    # Calculate probabilities using softmax
+                    probs = np.zeros(5)
+                    centers = np.array([0.1, 0.3, 0.5, 0.7, 0.9])  # Centers for each class
+                    temperature = 0.1  # Controls the softness of the probabilities
+                    
+                    # Calculate softmax probabilities
+                    exp_scores = np.exp(-((score - centers) ** 2) / (2 * temperature))
+                    probs = exp_scores / np.sum(exp_scores)
+                    
+                    # Get the predicted class
+                    risk_level = flood_status_map_reverse[np.argmax(probs)]
+                    
+                    # Format probabilities
+                    probs_str = ", ".join([f"{flood_status_map_reverse[i]}: {prob:.1%}" for i, prob in enumerate(probs)])
+                    print(f"{model_name:<20} {risk_level:<15} {probs_str}")
                 
                 elif model_name == 'Fuzzy Technique':
-                    flood_ctrl = model  # Load the fuzzy control system
-                    flood_sim = ctrl.ControlSystemSimulation(flood_ctrl)  # Create a simulation instance
-                    flood_sim.input['rainfall'] = features[0][0]
-                    flood_sim.input['water_level'] = features[0][1]
-                    flood_sim.input['elevation'] = features[0][2]
-                    flood_sim.input['slope'] = features[0][3]
-                    flood_sim.input['distance'] = features[0][4]
-                    flood_sim.compute()
-                    risk_value = flood_sim.output['flood_risk']
-                    risk_level = flood_status_map_reverse[int(round(risk_value))]
-                    print(f"{model_name:<20} {risk_level:<15} Risk Value: {risk_value:.2f}")
+                    fuzzy_system = model  # Load the fuzzy system dictionary
+                    flood_ctrl = fuzzy_system['control_system']
+                    flood_risk = fuzzy_system['consequent']
+                    flood_sim = ctrl.ControlSystemSimulation(flood_ctrl)
+                    
+                    # Input the values
+                    flood_sim.input['rainfall'] = float(features[0][0])
+                    flood_sim.input['water_level'] = float(features[0][1])
+                    flood_sim.input['elevation'] = float(features[0][2])
+                    flood_sim.input['slope'] = float(features[0][3])
+                    flood_sim.input['distance'] = float(features[0][4])
+                    
+                    try:
+                        # Compute the output
+                        flood_sim.compute()
+                        
+                        # Get the output value
+                        risk_value = flood_sim.output['flood_risk']
+                        
+                        # Calculate probabilities using membership functions
+                        probs = np.zeros(5)
+                        for j in range(5):
+                            if j == 0:  # Very Low
+                                probs[j] = fuzz.interp_membership(flood_risk.universe, flood_risk['very_low'].mf, risk_value)
+                            elif j == 1:  # Low
+                                probs[j] = fuzz.interp_membership(flood_risk.universe, flood_risk['low'].mf, risk_value)
+                            elif j == 2:  # Medium
+                                probs[j] = fuzz.interp_membership(flood_risk.universe, flood_risk['medium'].mf, risk_value)
+                            elif j == 3:  # High
+                                probs[j] = fuzz.interp_membership(flood_risk.universe, flood_risk['high'].mf, risk_value)
+                            else:  # Very High
+                                probs[j] = fuzz.interp_membership(flood_risk.universe, flood_risk['very_high'].mf, risk_value)
+                        
+                        # Normalize probabilities
+                        probs = probs / np.sum(probs)
+                        
+                        # Get the predicted class
+                        risk_level = flood_status_map_reverse[np.argmax(probs)]
+                        
+                        # Format probabilities
+                        probs_str = ", ".join([f"{flood_status_map_reverse[i]}: {prob:.1%}" for i, prob in enumerate(probs)])
+                        print(f"{model_name:<20} {risk_level:<15} {probs_str}")
+                    except Exception as e:
+                        print(f"{model_name:<20} Error: {str(e)}")
                 
                 elif model_name == 'MCDA':
                     weights = model
+                    # Normalize the input features
                     scaler = MinMaxScaler()
                     features_norm = scaler.fit_transform(features)
                     score = np.dot(features_norm, weights)[0]
-                    risk_level = flood_status_map_reverse[2] if score > 0.66 else flood_status_map_reverse[1] if score > 0.33 else flood_status_map_reverse[0]
-                    print(f"{model_name:<20} {risk_level:<15} Score: {score:.2%}")
+                    
+                    # Calculate probabilities using softmax
+                    probs = np.zeros(5)
+                    centers = np.array([0.1, 0.3, 0.5, 0.7, 0.9])  # Centers for each class
+                    temperature = 0.1  # Controls the softness of the probabilities
+                    
+                    # Calculate softmax probabilities
+                    exp_scores = np.exp(-((score - centers) ** 2) / (2 * temperature))
+                    probs = exp_scores / np.sum(exp_scores)
+                    
+                    # Get the predicted class
+                    risk_level = flood_status_map_reverse[np.argmax(probs)]
+                    
+                    # Format probabilities
+                    probs_str = ", ".join([f"{flood_status_map_reverse[i]}: {prob:.1%}" for i, prob in enumerate(probs)])
+                    print(f"{model_name:<20} {risk_level:<15} {probs_str}")
             else:
                 # For ML models
                 prediction = model.predict(features)[0]
